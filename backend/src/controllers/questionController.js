@@ -45,9 +45,34 @@ export const clearQuestionsForClass = async (req, res) => {
 
 // --- (createQuestion and updateQuestionStatus functions remain unchanged) ---
 
+// in backend/src/controllers/questionController.js
+
 export const createQuestion = async (req, res) => {
   const { text } = req.body;
-  const question = new Question({ text, author: req.user._id, classroom: req.params.classId });
+  const { classId } = req.params;
+
+  if (!text || text.trim() === "") {
+    return res.status(400).json({ message: "Question text cannot be empty." });
+  }
+
+  // DUPLICATE CHECK: Look for a question with the same text (case-insensitive) in the same class
+  const existingQuestion = await Question.findOne({
+    classroom: classId,
+    text: { $regex: `^${text.trim()}$`, $options: 'i' }, // Case-insensitive exact match
+  });
+
+  if (existingQuestion) {
+    // If the question exists, return a 409 Conflict error
+    return res.status(409).json({ message: "This question has already been asked." });
+  }
+
+  // If no duplicate is found, create the new question
+  const question = new Question({
+    text,
+    author: req.user._id,
+    classroom: classId,
+  });
+
   const createdQuestion = await question.save();
   res.status(201).json(createdQuestion);
 };

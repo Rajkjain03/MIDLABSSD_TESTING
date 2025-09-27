@@ -48,15 +48,22 @@ const ClassroomPage = () => {
 
   // --- (handleQuestionSubmit and handleStatusChange functions remain unchanged) ---
 
+  // in frontend/src/pages/ClassroomPage.js
+
   const handleQuestionSubmit = async (text) => {
-    setSubmissionMessage('');
+    setSubmissionMessage(''); // Clear previous success messages
+    setError('');             // Clear previous error messages
+
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       await axios.post(`http://localhost:5000/api/questions/${classId}`, { text }, config);
       setSubmissionMessage('Your question has been submitted successfully!');
-      if (user.role === 'teacher') fetchQuestions();
+      if (user.role === 'teacher') {
+        fetchQuestions();
+      }
     } catch (err) {
-      alert('Failed to post question.');
+      // Set the specific error message from the backend response
+      setError(err.response?.data?.message || 'Failed to post question.');
     }
   };
 
@@ -104,6 +111,7 @@ const ClassroomPage = () => {
         </aside>
       )}
     </div>
+    
   );
 };
 
