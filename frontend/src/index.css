@@ -118,3 +118,57 @@ header nav button { background-color: #3f51b5; color: white; padding: 0.5rem 1re
   border-radius: 4px;
   cursor: pointer;
 }
+
+/* Add these styles to the end of your index.css */
+
+.classroom-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 992px) {
+  .classroom-grid {
+    grid-template-columns: 3fr 1fr;
+  }
+}
+
+.classroom-main {
+  /* This will contain the question board or student form */
+}
+
+.classroom-sidebar {
+  /* This will contain the filter controls */
+}
+
+.filter-controls {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  position: sticky;
+  top: 2rem; /* Makes the panel stick on scroll */
+}
+
+.filter-controls button {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  border: 1px solid #ddd;
+  background-color: #f7f7f7;
+  color: #333;
+  cursor: pointer;
+}
+
+.filter-controls button:hover {
+  background-color: #e9e9e9;
+}
+
+.filter-controls .clear-btn {
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+}
+.filter-controls .clear-btn:hover {
+  background-color: #c12b2b;
+}

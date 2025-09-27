@@ -1,3 +1,4 @@
+// frontend/src/pages/ClassroomPage.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -5,32 +6,55 @@ import axios from 'axios';
 import { selectCurrentUser } from '../features/authSlice';
 import QuestionForm from '../components/QuestionForm';
 import QuestionCard from '../components/QuestionCard';
+import FilterControls from '../components/FilterControls'; // <-- Import new component
 
 const ClassroomPage = () => {
   const { classId } = useParams();
   const user = useSelector(selectCurrentUser);
   const [questions, setQuestions] = useState([]);
+  const [filter, setFilter] = useState(''); // <-- New state for filtering
   const [error, setError] = useState('');
+  const [submissionMessage, setSubmissionMessage] = useState('');
 
   const fetchQuestions = useCallback(async () => {
+    if (user.role !== 'teacher') return;
     try {
-      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      const config = {
+        headers: { Authorization: `Bearer ${user.token}` },
+        params: { status: filter || undefined }, // <-- Add filter to request
+      };
       const { data } = await axios.get(`http://localhost:5000/api/questions/${classId}`, config);
       setQuestions(data);
     } catch (err) {
-      setError('Failed to fetch questions.');
+      setError('Failed to fetch questions. You may not have permission.');
     }
-  }, [classId, user.token]);
+  }, [classId, user.token, user.role, filter]); // <-- Add filter to dependency array
 
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
 
+  const handleClearAll = async () => {
+    if (window.confirm("Are you sure you want to delete all questions in this class? This cannot be undone.")) {
+      try {
+        const config = { headers: { Authorization: `Bearer ${user.token}` } };
+        await axios.delete(`http://localhost:5000/api/questions/${classId}/clear`, config);
+        fetchQuestions(); // Refresh the list
+      } catch (err) {
+        alert('Failed to clear questions.');
+      }
+    }
+  };
+
+  // --- (handleQuestionSubmit and handleStatusChange functions remain unchanged) ---
+
   const handleQuestionSubmit = async (text) => {
+    setSubmissionMessage('');
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       await axios.post(`http://localhost:5000/api/questions/${classId}`, { text }, config);
-      fetchQuestions();
+      setSubmissionMessage('Your question has been submitted successfully!');
+      if (user.role === 'teacher') fetchQuestions();
     } catch (err) {
       alert('Failed to post question.');
     }
@@ -47,20 +71,38 @@ const ClassroomPage = () => {
   };
 
   return (
-    <div className="classroom">
-      {error && <p className="error-message">{error}</p>}
-      <h2>Classroom Q&A</h2>
-      {user.role === 'student' && <QuestionForm onSubmit={handleQuestionSubmit} />}
-      <div className="question-board">
-        {questions.map((q) => (
-          <QuestionCard
-            key={q._id}
-            question={q}
-            user={user}
-            onStatusChange={handleStatusChange}
-          />
-        ))}
+    <div className="classroom-grid">
+      <div className="classroom-main">
+        <h2>Classroom Q&A</h2>
+        {error && <p className="error-message">{error}</p>}
+        {user.role === 'student' && (
+          <>
+            <QuestionForm onSubmit={handleQuestionSubmit} />
+            {submissionMessage && <p className="success-message">{submissionMessage}</p>}
+          </>
+        )}
+        {user.role === 'teacher' && (
+          <div className="question-board">
+            {questions.length > 0 ? (
+              questions.map((q) => (
+                <QuestionCard
+                  key={q._id}
+                  question={q}
+                  user={user}
+                  onStatusChange={handleStatusChange}
+                />
+              ))
+            ) : (
+              <p>No questions match the current filter.</p>
+            )}
+          </div>
+        )}
       </div>
+      {user.role === 'teacher' && (
+        <aside className="classroom-sidebar">
+          <FilterControls setFilter={setFilter} onClear={handleClearAll} />
+        </aside>
+      )}
     </div>
   );
 };
